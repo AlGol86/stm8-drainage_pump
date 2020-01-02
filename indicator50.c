@@ -13,16 +13,18 @@ extern int sys_del;
 extern char state_indicator; 
 extern char deca_minutes;
 extern char alarm_flag;
+extern char trig_AMP;
 //dalay & internal functions
+
 void delay(int j) 
 {
  for (int i=1; i<j;i++)  
   {asm("nop");}
  
  buttons(); //chek buttons - set variable "button"
- pushed_button(); // execute functions depend on variable "button" set 
+ pushed_button(); // execute functions depend of set variable "button"
  event_AMP();
- extern char trig_AMP;
+
  if(step_AMP==0) 
  {
    AMP=current_AMP();
@@ -34,45 +36,46 @@ void delay(int j)
  {
     AMP_del++; 
     if(AMP_del==10000) 
-    {
+    {/////////save current value from same working period (with delay during switch on)
        for(char i=1;i<10;i++) day_AMP[10-i]=day_AMP[9-i];
        day_AMP[0]=AMP;
        AMP_del=10001;
     }
  } 
- if(trig_AMP==0) 
-       AMP_del=0;
+ if(trig_AMP==0) AMP_del=0;
+ 
  indicate_state();
- if((state_indicator%50==0)) 
+ if((state_indicator%50==0)) //indicate one of 4 general state names 'tok'-'working'-'period'-'number of switchings'
  {
    sys_del++; 
    if(sys_del==7000) 
    { 
-      state_indicator++;
+      state_indicator++;///indicate value
       sys_del=0;
    }
  }
- step_AMP++;
- if((beep_flag)&&((TIM2_CNTRL&96)==0)) 
+ step_AMP++; //0-255 for set action period
+ 
+ /////beep
+ if((alarm_flag)&&((TIM2_CNTRL&96)==0)) 
    PB_DDR|=32; 
  else 
    PB_DDR&=~32;
- 
-}
+ }
 
 void indicator (char s[10])
 { 
-  PD_ODR|=d_mask;  // be cearful!!! (D2..D6=> bit_odr=1)
-  PC_ODR|=c_mask;  // be cearful!!! (C3..C6=> bit_odr=1)
+  PD_ODR|=d_mask; // do not touch!!! (D2..D6=> bit_odr=1)
+  PC_ODR|=c_mask; // do not touch!!! (C3..C6=> bit_odr=1)
   
-  PD_CR1&=~d_mask; // be cearful!!! (open drain)
-  PC_CR1&=~c_mask; // be cearful!!! (open drain)
+  PD_CR1&=~d_mask;  // do not touch!!! (open drain)
+  PC_CR1&=~c_mask;   // do not touch!!! (open drain)
  
-  PD_DDR|=d_mask;  // be cearful!!! (D2..D6=> out) value=0
-  PC_DDR|=c_mask;  // be cearful!!! (C3..C6=> out) value=0
+  PD_DDR|=d_mask; // do not touch!!! (D2..D6=> out) no signal
+  PC_DDR|=c_mask; // do not touch!!! (C3..C6=> out) no signal
  
 
-  // column_2 :
+  // stolb_2 :
  
   PD_ODR&=~d1; //"-"
 
@@ -88,7 +91,7 @@ void indicator (char s[10])
   
   PD_ODR|=d1;
   
- // column_1 :
+ // stolb_1 :
  
   PD_CR1|=d1;//"+"
  
@@ -104,7 +107,7 @@ void indicator (char s[10])
   
   PD_CR1&=~d1;
  
-  // column_4 :
+  // stolb_4 :
  
   PD_ODR&=~d2; //"-"
 
@@ -120,7 +123,7 @@ void indicator (char s[10])
   
   PD_ODR|=d2;
   
- // column_3 :
+ // stolb_3 :
  
   PD_CR1|=d2;//"+"
  
@@ -136,7 +139,7 @@ void indicator (char s[10])
   
   PD_CR1&=~d2;
   
-    // column_6 :
+    // stolb_6 :
  
   PD_ODR&=~d4; //"-"
 
@@ -152,7 +155,7 @@ void indicator (char s[10])
   
   PD_ODR|=d4;
   
- // column_5 :
+ // stolb_5 :
  
   PD_CR1|=d4;//"+"
  
@@ -168,7 +171,7 @@ void indicator (char s[10])
   
   PD_CR1&=~d4;
   
-    // column_8 :
+    // stolb_8 :
  
   PD_ODR&=~d5; //"-"
 
@@ -184,7 +187,7 @@ void indicator (char s[10])
   
   PD_ODR|=d5;
   
- // column_7 :
+ // stolb_7 :
  
   PD_CR1|=d5;//"+"
  
@@ -200,7 +203,7 @@ void indicator (char s[10])
   
   PD_CR1&=~d5;
    
-  // column_10 :
+  // stolb_10 :
  
   PD_ODR&=~d6; //"-"
 
@@ -216,7 +219,7 @@ void indicator (char s[10])
   
   PD_ODR|=d6;
   
- // column_9 :
+ // stolb_9 :
  
   PD_CR1|=d6;//"+"
  
@@ -287,9 +290,10 @@ case 'K': {y[pozition]=248;y[pozition+1]=80; y[pozition+2]=136; break;}
 case 'P': {y[pozition]=248;y[pozition+1]=160;y[pozition+2]=224; break;}
 case 'A': {y[pozition]=120; y[pozition+1]=160;y[pozition+2]=120; break;}
 case 'E': {y[pozition]=248;y[pozition+1]=168;y[pozition+2]=168; break;} 
-case 'G': {y[pozition]=248;y[pozition+1]=128;y[pozition+2]=248; break;} //cyr-'pe'
-case '<': {y[pozition]=120;y[pozition+1]=168;y[pozition+2]=184; break;} //cyr-'be'
-case ' ': {y[pozition]=0;y[pozition+1]=0;y[pozition+2]=0; break;}
-case 'L': {y[pozition]=248;y[pozition+1]=64;y[pozition+2]=56; break;}   //cyr-'el'
+case 'G': {y[pozition]=248;y[pozition+1]=128;y[pozition+2]=248; break;} //pe
+case '<': {y[pozition]=120;y[pozition+1]=168;y[pozition+2]=184; break;}//be
+case ' ': {y[pozition]=0;y[pozition+1]=0;y[pozition+2]=0; break;}//be
+case 'L': {y[pozition]=248;y[pozition+1]=64;y[pozition+2]=56; break;}//be
   }
 } 
+
