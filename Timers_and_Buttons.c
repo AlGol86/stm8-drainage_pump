@@ -2,7 +2,7 @@
 #include "main.h"
 
 extern char timer_flags;
-extern char beep_flag;
+extern char alarm_flag;
 extern char deca_minutes;  //0-10-2550 minutes
 extern int AMP;//Amper
 extern int T1;
@@ -26,7 +26,8 @@ extern char state_indicator; //0-ampers 100-t1(time in load) 200-t2(interval on-
 
 void init_tim1(void) //count days each 24 hours
 {
-  TIM1_IER_UIE=0;//enable interrupt by overfollow
+
+TIM1_IER_UIE=0;//enable interrupt by overfollow
 	//TIM1_IER_CC1IE=1;//enable interrupt by compare
   TIM1_PSCRH=0xFF; //prescaler 0-255 
   TIM1_PSCRL=0xFF; //prescaler 0-255 
@@ -42,24 +43,25 @@ void init_tim1(void) //count days each 24 hours
 	TIM1_CR1_CEN=1;
         for(int i=1;i<30000;i++){}
         for(int i=1;i<30000;i++){}
-  TIM1_SR1_UIF=0;
-  TIM1_IER_UIE=1;
+        TIM1_SR1_UIF=0;
+        TIM1_IER_UIE=1;
     
 }
  
 
 void init_tim2(void) //count seconds 
 {    
-  asm("rim");
-  deca_minutes=0;
-  TIM2_IER_UIE=0;
+         asm("rim");
+        
+        deca_minutes=0;
+  	TIM2_IER_UIE=0;
 	TIM2_IER_CC1IE=1;
-  TIM2_PSCR=15; //15 
+        TIM2_PSCR=15; //15 
 	TIM2_ARRH=0x8f; //0x8f
-  TIM2_ARRL=0x60; //0x60
+        TIM2_ARRL=0x60; //0x60
 	TIM2_CNTRH=0;
 	TIM2_CNTRL=0;
-  TIM2_CR1_CEN=1;
+        TIM2_CR1_CEN=1;
 }
 
   
@@ -91,7 +93,7 @@ void init_buttons(void)
 
 void buttons(void)
 {
- if ((((PA_IDR & bit_left_button)==0)||((PA_IDR&bit_right_button)==0)||((PA_IDR&bit_centr_button)==0))&&(counter_button<10000)) counter_button++;
+  if ((((PA_IDR & bit_left_button)==0)||((PA_IDR&bit_right_button)==0)||((PA_IDR&bit_centr_button)==0))&&(counter_button<10000)) counter_button++;
    else if (counter_button>5) counter_button=5;  //(counter_button=10000) or (any batton not pushed)
           else if (counter_button>0)counter_button--;  //(counter_button=1..5) and (any batton not pushed)
  if ((counter_button>2)&&((PA_IDR&bit_left_button )==0)&&(button==0)) button=1;
@@ -99,6 +101,7 @@ void buttons(void)
  if ((counter_button>2)&&((PA_IDR&bit_centr_button)==0)&&(button==0)) button=3;
  if ((counter_button>8000)&&((PA_IDR&bit_centr_button)==0))           button=4; //long push
  if ((counter_button<2)&&(button==5))  { button=0;}
+ 
 }
 
 void pushed_button(void)
@@ -113,6 +116,8 @@ switch (button)
  case 5: {asm("nop");              break;}
  }
 }
+
+
 
 void func_batton_1(void) //left button K1
 {
@@ -135,6 +140,7 @@ void func_batton_1(void) //left button K1
  else  if (state_indicator==202) state_indicator=231;
  if ((state_indicator>152)&&(state_indicator<182)) state_indicator--;
  else  if (state_indicator==152) state_indicator=181;
+ 
 }
 
 void func_batton_2(void) //right button K2
@@ -186,5 +192,10 @@ void func_batton_3(void)
 
 void func_batton_4(void)
 {
-  beep_flag=0;
+  alarm_flag=0;
+  PB_DDR&=~16;
+  write_eeprom(eeprom_alarm,0);
+  init_tim2();
+  T1=0;
 }
+
